@@ -3,10 +3,13 @@ package com.example.TelegramBotSpringBoot;
 import com.example.TelegramBotSpringBoot.service.CurrencyCorversionService;
 import com.example.TelegramBotSpringBoot.service.CurrencyModeService;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
@@ -27,22 +30,24 @@ import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.*;
 
-
-@EnableScheduling
+@Component
 public class TestBot extends TelegramLongPollingBot {
-
+    @Value("${username}")
+    private String username;
+    @Value("${apikey}")
+    private String apikey;
     private final CurrencyModeService currecyModeService = CurrencyModeService.getInstance();
     private final CurrencyCorversionService currencyCorversionService = (CurrencyCorversionService) CurrencyCorversionService.getInstance();
 
-    double lastValue=0.0;
+
     @Override
     public String getBotUsername() {
-        return "@";
+        return username;
     }
 
     @Override
     public String getBotToken() {
-        return "";
+        return apikey;
     }
 
     @Override
@@ -122,17 +127,37 @@ public class TestBot extends TelegramLongPollingBot {
         if(message.hasText()){  //metoddan sonra yazılan değer için karşılık gelen döviz değeri
             String messageText = message.getText();
             Optional<Double> value = parseDouble(messageText);
-
+            message.getChatId();
             Currency originalCurrency = currecyModeService.getOriginalCurrency(message.getChatId());
             Currency targetCurrency = currecyModeService.getTargetCurrency(message.getChatId());
             BigDecimal ratio = currencyCorversionService.getConversionRatio(originalCurrency, targetCurrency);
 
+
+
             if (value.isPresent()){
-                lastValue = value.get()*ratio.doubleValue();
                 execute(SendMessage.builder()
-                        .chatId(message.getChatId().toString())
+                        .chatId(message.getChatId())
                         .text(String.format("%4.2f %s is %4.2f %s",value.get(),originalCurrency,(value.get()*ratio.doubleValue()),targetCurrency))
                         .build());
+
+                String sql_chat_id_put = "insert into chat_id_table" +
+                        "(chat_id,name)" +
+                        "values" +
+                        "('"+message.getChatId()+"','"+message.getFrom().getFirstName()+"')";
+                Connection.put(sql_chat_id_put);
+
+                String sql_name_put = "insert into original_target_name" +
+                        "(original,target)" +
+                        "values" +
+                        "('"+originalCurrency.name()+"','"+targetCurrency.name()+"')";
+                Connection.put(sql_name_put);
+
+                String sql_put= "insert into currency_price_name_table" +
+                        "(currency_name,price)" +
+                        "values" +
+                        "('"+originalCurrency.name()+"-"+targetCurrency.name()+"',"+ratio.doubleValue()+")";
+                Connection.put(sql_put);
+
                 return;
             }
         }
@@ -151,7 +176,7 @@ public class TestBot extends TelegramLongPollingBot {
     }
 
 
-    @Scheduled(cron = "")
+   /* @Scheduled(cron = "")
     public void sendMessage(Message message) {
         Currency originalCurrency = currecyModeService.getOriginalCurrency(message.getChatId());
         Currency targetCurrency = currecyModeService.getTargetCurrency(message.getChatId());
@@ -173,7 +198,7 @@ public class TestBot extends TelegramLongPollingBot {
             }
         }
 
-    }
+    }*/
 
 
 
@@ -189,8 +214,6 @@ public class TestBot extends TelegramLongPollingBot {
 
 
     }
-
-
 
     }
 
