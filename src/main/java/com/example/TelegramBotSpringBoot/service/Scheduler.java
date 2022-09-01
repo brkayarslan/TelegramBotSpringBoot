@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @Component
 public class Scheduler {
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 0 * * * *")
     public void sendMessage() {
 
         double lastPrice = Connection.priceLast();
@@ -32,6 +32,8 @@ public class Scheduler {
                     .chatId(chatId)
                     .text("new price: "+newPrice)
                     .build();
+
+
             String sql_put= "insert into currency_price_name_table" +
                     "(currency_name,price)" +
                     "values" +

@@ -1,16 +1,12 @@
 package com.example.TelegramBotSpringBoot;
 
+import com.example.TelegramBotSpringBoot.Table.*;
 import com.example.TelegramBotSpringBoot.service.CurrencyCorversionService;
 import com.example.TelegramBotSpringBoot.service.CurrencyModeService;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -24,10 +20,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
 import java.math.BigDecimal;
-import java.time.LocalTime;
 import java.util.*;
 
 @Component
@@ -39,6 +32,12 @@ public class TestBot extends TelegramLongPollingBot {
     private final CurrencyModeService currecyModeService = CurrencyModeService.getInstance();
     private final CurrencyCorversionService currencyCorversionService = (CurrencyCorversionService) CurrencyCorversionService.getInstance();
 
+    @Autowired
+    ChatIdTableRepository chatIdTableRepository ;
+    @Autowired
+    CurrencyPriceNameTableRepository currencyPriceNameTableRepository;
+    @Autowired
+    OriginalTargetNameTableRepository originalTargetNameTableRepository;
 
     @Override
     public String getBotUsername() {
@@ -140,23 +139,32 @@ public class TestBot extends TelegramLongPollingBot {
                         .text(String.format("%4.2f %s is %4.2f %s",value.get(),originalCurrency,(value.get()*ratio.doubleValue()),targetCurrency))
                         .build());
 
-                String sql_chat_id_put = "insert into chat_id_table" +
+                /*String sql_chat_id_put = "insert into chat_id_table" +
                         "(chat_id,name)" +
                         "values" +
                         "('"+message.getChatId()+"','"+message.getFrom().getFirstName()+"')";
-                Connection.put(sql_chat_id_put);
+                Connection.put(sql_chat_id_put);*/
 
-                String sql_name_put = "insert into original_target_name" +
+                ChatIdTable chatIdTable = new ChatIdTable(message.getChatId().toString(),message.getFrom().getFirstName());
+                chatIdTableRepository.save(chatIdTable);
+
+                /*String sql_name_put = "insert into original_target_name" +
                         "(original,target)" +
                         "values" +
                         "('"+originalCurrency.name()+"','"+targetCurrency.name()+"')";
-                Connection.put(sql_name_put);
+                Connection.put(sql_name_put);*/
 
-                String sql_put= "insert into currency_price_name_table" +
+                OriginalTargetNameTable originalTargetName = new OriginalTargetNameTable(originalCurrency.name(), targetCurrency.name());
+                originalTargetNameTableRepository.save(originalTargetName);
+
+                /*String sql_put= "insert into currency_price_name_table" +
                         "(currency_name,price)" +
                         "values" +
                         "('"+originalCurrency.name()+"-"+targetCurrency.name()+"',"+ratio.doubleValue()+")";
-                Connection.put(sql_put);
+                Connection.put(sql_put);*/
+
+                CurrencyPriceNameTable currencyPriceNameTable = new CurrencyPriceNameTable(originalCurrency.name()+"-"+targetCurrency.name(),ratio.doubleValue());
+                currencyPriceNameTableRepository.save(currencyPriceNameTable);
 
                 return;
             }
