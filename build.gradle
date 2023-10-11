@@ -2,6 +2,14 @@ plugins {
 	id 'org.springframework.boot' version '2.7.2'
 	id 'io.spring.dependency-management' version '1.0.12.RELEASE'
 	id 'java'
+	id "org.sonarqube" version "4.2.1.3168"
+}
+
+sonar {
+  properties {
+    property "sonar.projectKey", "brkayarslan_TelegramBotSpringBoot_AYsebfzGi8LchlwhlyCd"
+    property "sonar.projectName", "TelegramBotSpringBoot"
+  }
 }
 
 group = 'com.example'
